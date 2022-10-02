@@ -1,0 +1,6 @@
+﻿@page "/admin"
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = Global.Roles.ADMIN)]
+
+<AppUsersList />

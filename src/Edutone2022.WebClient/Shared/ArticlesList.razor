@@ -1,0 +1,144 @@
+﻿@inject HttpClient httpClient
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div>
+    <AuthorizeView>
+        <MudIconButton Icon="@Icons.Material.Filled.AddBox" Color="Color.Primary" Size="Size.Large" @onclick="AddArticle" Class="mr-3" />
+    </AuthorizeView>
+</div>
+
+@if (articles is not null)
+{
+    @if (articles.Count > 0)
+    {
+        foreach (var article in articles)
+        {
+            <!-- Article -->
+            <section class="simple-post">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="ml-auto">
+                            <AuthorizeView>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateArticle(article)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteArticle(article)" />
+                            </AuthorizeView>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="down-content">
+                                <h3>@article.Title</h3>
+                                @((MarkupString)article.Content)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="ml-auto p-2">
+                            <!--<MudAvatar Image="@(article.Avatar.UploadPath + "/" + article.Avatar.FileName)" />-->
+                        </div>
+                        <div>
+                            <p class="font-monospace">@article.UserName</p>
+                            <p class="text-muted">Опубликовано: @article.CreationDate</p>
+                            @if (article.UpdatedAt.HasValue)
+                            {
+                                <p class="text-muted">Обновлено: @article.UpdatedAt.Value</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
+        }
+    }
+    else
+    {
+        <div class="col-md-4">
+            <MudAlert Severity="Severity.Normal">новостей нет...</MudAlert>
+        </div>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Загрузка новостей...</MudAlert>
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}
+
+@code {
+    List<ArticleModel> articles;
+
+    DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        articles = await httpClient.GetFromJsonAsync<List<ArticleModel>>("api/article/all");
+    }
+
+    private async Task AddArticle()
+    {
+        var dialog = DialogService.Show<ArticleAdd>("Добавление новости", maxWidth);
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PostAsJsonAsync<ArticleAddRequest>("api/article/add", result.Data as ArticleAddRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                var addedArticle = await response.Content.ReadFromJsonAsync<ArticleModel>();
+                articles.Add(addedArticle);
+                articles = articles.OrderByDescending(a => a.Id).ToList();
+                Snackbar.Add("Новость успешно добавлена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу добавить новость!", Severity.Error);
+            }
+        }
+    }
+
+    private async Task UpdateArticle(ArticleModel article)
+    {
+        var parameters = new DialogParameters { ["article"] = article };
+
+        var dialog = DialogService.Show<ArticleUpdate>("Обновить новость", parameters, maxWidth);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PutAsJsonAsync<ArticleModel>($"api/article/update/{article.Id}", result.Data as ArticleModel);
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedArticle = await response.Content.ReadFromJsonAsync<ArticleModel>();
+                var index = articles.IndexOf(article);
+                articles.Remove(article);
+                articles.Insert(index, updatedArticle);
+                Snackbar.Add("Информация успешно обновлена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу обновить новость!", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteArticle(ArticleModel article)
+    {
+        var parameters = new DialogParameters { ["article"] = article };
+
+        var dialog = DialogService.Show<ArticleDelete>("Удалить новость", parameters);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var articleToDelete = result.Data as ArticleModel;
+            var response = await httpClient.DeleteAsync($"api/article/delete/{articleToDelete.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                articles.Remove(articleToDelete);
+                Snackbar.Add("Новость успешно удалена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу удалить новость!", Severity.Error);
+            }
+
+        }
+    }
+}

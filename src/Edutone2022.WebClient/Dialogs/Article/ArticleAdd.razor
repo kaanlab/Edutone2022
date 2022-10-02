@@ -1,0 +1,99 @@
+﻿@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
+
+@inject HttpClient httpClient
+
+<MudDialog>
+    <DialogContent>
+        <EditForm EditContext="@editContext">
+            <DataAnnotationsValidator />
+
+            <InputFile id="fileInput" OnChange="UploadFiles" hidden accept=".jpg, .jpeg, .png" />
+            <MudFab HtmlTag="label"
+                    Color="Color.Secondary"
+                    Icon="@Icons.Filled.Image"
+                    Label="Load picture"
+                    for="fileInput" />
+
+            <MudTextField Label="Название" Class="mt-3" Lines="2" @bind-Value="Article.Title" For="@(() => Article.Title)" />
+            <MudText Typo="Typo.body2" Class="my-4">Название</MudText>
+
+            <MudTextField Label="Содержание" Class="mt-3" Lines="2" @bind-Value="Article.Content" For="@(() => Article.Title)" />
+            <MudText Typo="Typo.body2" Class="my-4">Содержание</MudText>
+
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Info" OnClick="Add" Disabled="@formInvalid">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public ArticleAddRequest Article { get; set; } = new();
+
+    IBrowserFile file;
+    private bool formInvalid = true;
+    private EditContext editContext;
+    private string authUserId;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authUser = (await authenticationState).User;
+        authUserId = authUser.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid).Value;
+
+        editContext = new EditContext(Article);
+        editContext.OnFieldChanged += HandleFieldChanged;
+
+        //var builder = WebAssemblyHostBuilder.CreateDefault();
+        //uploadUrl = $@"{builder.HostEnvironment.BaseAddress}api/file/article";
+    }
+
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    {
+        formInvalid = !editContext.Validate();
+        StateHasChanged();
+    }
+
+    private void UploadFiles(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+        //TODO upload the files to the server
+    }
+
+    async Task Add()
+    {
+        Article.UserId = authUserId;
+        if (file is not null)
+        {
+            Stream stream = file.OpenReadStream();
+            MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            stream.Close();
+
+            var uploadedFile = new UploadFileRequest();
+            uploadedFile.FileName = file.Name;
+            uploadedFile.FileContent = ms.ToArray();
+            ms.Close();
+
+            var response = await httpClient.PostAsJsonAsync<UploadFileRequest>("/api/upload/article", uploadedFile);
+            if (response.IsSuccessStatusCode)
+            {
+                var fileModel = await response.Content.ReadFromJsonAsync<FileModel>();
+                Article.Image = fileModel;
+            }
+        }
+
+        MudDialog.Close(DialogResult.Ok(Article));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,15 @@
+﻿@page "/logout"
+
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.Logout();
+        NavigationManager.NavigateTo("/");
+        Snackbar.Add($"До новых встреч 👋", Severity.Normal);
+    }
+}

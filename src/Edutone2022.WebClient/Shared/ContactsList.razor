@@ -1,0 +1,145 @@
+﻿@inject HttpClient httpClient
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+
+<div>
+    <AuthorizeView>
+        <MudIconButton Icon="@Icons.Material.Filled.AddBox" Color="Color.Primary" Size="Size.Large" @onclick="AddContact" Class="mr-3" />
+    </AuthorizeView>
+</div>
+
+@if (employeeContacts is not null)
+{
+    @if (employeeContacts.Count > 0)
+    {
+        foreach (var contact in employeeContacts)
+        {
+            <!-- Article -->
+            <section class="simple-post">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="ml-auto">
+                            <AuthorizeView>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateContact(contact)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteContact(contact)" />
+                            </AuthorizeView>
+                        </div>
+                    </div>
+                   <!-- <div class="row">
+                        <div class="col-md-12">
+                            <div class="down-content">
+                                <h3>@article.Title</h3>
+                                @((MarkupString)article.Content)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="ml-auto p-2">
+                            <MudAvatar Image="@(article.Avatar.UploadPath + "/" + article.Avatar.FileName)" />
+                        </div>
+                        <div>
+                            <p class="font-monospace">@article.UserName</p>
+                            <p class="text-muted">Опубликовано: @article.CreationDate</p>
+                            @if (article.UpdatedAt.HasValue)
+                            {
+                                <p class="text-muted">Обновлено: @article.UpdatedAt.Value</p>
+                            }
+                        </div>
+                     </div> -->
+                </div>
+            </section>
+        }
+    }
+    else
+    {
+        <div class="col-md-4">
+            <MudAlert Severity="Severity.Normal">Контактов не найдено...</MudAlert>
+        </div>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Загрузка контактов...</MudAlert>
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}
+
+@code {
+    List<EmployeeContactModel> employeeContacts;
+
+    DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        //articles = await httpClient.GetFromJsonAsync<List<AppArticle>>("api/article/all");
+
+    }
+
+    private async Task AddContact()
+    {
+        var dialog = DialogService.Show<ContactAddOrUpdate>("Добавление контакта", maxWidth);
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PostAsJsonAsync<EmployeeContactModel>("api/article/add", result.Data as EmployeeContactModel);
+            if (response.IsSuccessStatusCode)
+            {
+                var addedContact = await response.Content.ReadFromJsonAsync<EmployeeContactModel>();
+                employeeContacts.Add(addedContact);
+                Snackbar.Add("Контакт успешно добавлен!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу добавить контакт!", Severity.Error);
+            }
+        }
+    }
+
+    private async Task UpdateContact(EmployeeContactModel employeeContact)
+    {
+        var parameters = new DialogParameters { ["employeeContact"] = employeeContact };
+
+        var dialog = DialogService.Show<ContactAddOrUpdate>("Обновить контакт", parameters, maxWidth);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PutAsJsonAsync<EmployeeContactModel>("api/article/update", result.Data as EmployeeContactModel);
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedContact = await response.Content.ReadFromJsonAsync<EmployeeContactModel>();
+                var index = employeeContacts.IndexOf(employeeContact);
+                employeeContacts.Remove(employeeContact);
+                employeeContacts.Insert(index, updatedContact);
+                Snackbar.Add("Информация успешно обновлена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу обновить информацию о контакте!", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteContact(EmployeeContactModel employeeContact)
+    {
+        var parameters = new DialogParameters { ["employeeContact"] = employeeContact };
+
+        var dialog = DialogService.Show<ContactDelete>("Удалить контакт", parameters);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var contactToDelete = result.Data as EmployeeContactModel;
+            var response = await httpClient.DeleteAsync($"api/article/delete/{contactToDelete.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                employeeContacts.Remove(contactToDelete);
+                Snackbar.Add("Информация о контакте успешно удалена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу удалить контакт!", Severity.Error);
+            }
+
+        }
+    }
+}
