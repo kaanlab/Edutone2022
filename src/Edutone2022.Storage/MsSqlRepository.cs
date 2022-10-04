@@ -134,7 +134,7 @@ namespace Edutone2022.Storage
 
         public async Task<IEnumerable<EmployeeContactModel>> GetContacts()
         {
-            var contacts = await dbContext.EmployeeContacts.Where(x => x.IsDeleted == false).ToArrayAsync();
+            var contacts = await dbContext.EmployeeContacts.Where(x => x.IsDeleted == false).Include(x => x.Image).ToArrayAsync();
             return Use.Mapper.Map<IEnumerable<EmployeeContactModel>>(contacts);
         }
 
@@ -207,8 +207,7 @@ namespace Edutone2022.Storage
             await dbContext.Files.AddAsync(newFile);
             await dbContext.SaveChangesAsync();
 
-            var a = Use.Mapper.Map<FileModel>(newFile);
-            return a;
+            return Use.Mapper.Map<FileModel>(newFile);
         }
 
         public async Task<MainPageModel> SaveMainPage(MainPageModel mainPage)

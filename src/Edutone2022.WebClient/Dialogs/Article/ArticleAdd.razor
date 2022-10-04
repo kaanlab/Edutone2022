@@ -5,12 +5,12 @@
         <EditForm EditContext="@editContext">
             <DataAnnotationsValidator />
 
-            <img src="@imgUrl">
+            <img class="img-fluid" src="@imgUrl">
             <InputFile id="fileInput" OnChange="UploadFiles" hidden accept=".jpg, .jpeg, .png" />
             <MudFab HtmlTag="label"
                     Color="Color.Secondary"
                     Icon="@Icons.Filled.Image"
-                    Label="Load picture"
+                    Label="Загрузить изображение"
                     for="fileInput" />
 
             <MudTextField Label="Название" Class="mt-3" Lines="2" @bind-Value="Article.Title" For="@(() => Article.Title)" />

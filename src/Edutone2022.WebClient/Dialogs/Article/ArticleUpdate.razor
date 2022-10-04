@@ -7,20 +7,20 @@
 
             @if(imgUrl is not null)
             {
-                <img src="@imgUrl">
+                <img class="img-fluid" src="@imgUrl">
             }
             else
             {
                 if(Article.Image is not null)
                 {
-                    <img src="@Article.Image.FullPath">
+                    <img class="img-fluid" src="@Article.Image.FullPath">
                 }
             }
             <InputFile id="fileInput" OnChange="UploadFiles" hidden accept=".jpg, .jpeg, .png" />
             <MudFab HtmlTag="label"
                     Color="Color.Secondary"
                     Icon="@Icons.Filled.Image"
-                    Label="Load picture"
+                    Label="Загрузить изображение"
                     for="fileInput" />
 
             <MudTextField Label="Название" Class="mt-3" Lines="2" @bind-Value="Article.Title" For="@(() => Article.Title)" />

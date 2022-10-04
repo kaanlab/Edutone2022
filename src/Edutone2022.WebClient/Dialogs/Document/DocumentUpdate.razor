@@ -54,12 +54,22 @@
     private void UploadFile(InputFileChangeEventArgs e)
     {
         file = e.File;
-        DocumentUpdateModel.FileContent = new byte[file.Size];
-        DocumentUpdateModel.FileName = file.Name;
     }
 
     async Task Update()
     {
+        if(file is not null)
+        {
+            Stream stream = file.OpenReadStream();
+            MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            stream.Close();
+
+            DocumentUpdateModel.FileContent = ms.ToArray();
+            ms.Close();
+
+        }
+        DocumentUpdateModel.FileName = file.Name;
         MudDialog.Close(DialogResult.Ok(DocumentUpdateModel));
     }
 
