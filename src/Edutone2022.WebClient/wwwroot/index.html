@@ -49,11 +49,19 @@
         <i class="ti-angle-up"></i>
     </div>
 
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
 
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="_content/MudBlazor.Markdown/MudBlazor.Markdown.min.js"></script>
 
+    <script src="plugins/aos/aos.js"></script>
+    <script>
+        Blazor.start().then(function () {
+            var customScript = document.createElement('script');
+            customScript.setAttribute('src', 'js/script.js');
+            document.head.appendChild(customScript);
+        });
+    </script>
 </body>
 
 </html>
