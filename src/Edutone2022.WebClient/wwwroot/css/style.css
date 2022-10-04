@@ -1270,7 +1270,7 @@ hr {
   }
 }
 .featured-article article.featured .image {
-  flex-basis: 100%;
+  flex-basis: 35%;
   padding: 20px;
 }
 .featured-article article.featured .image img {
