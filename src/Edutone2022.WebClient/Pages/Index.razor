@@ -1,5 +1,9 @@
 ﻿@page "/"
 
+@inject HttpClient httpClient
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
 <!--====================================
 =            Hero Section            =
 =====================================-->
@@ -22,23 +26,28 @@
 		<div class="shape" data-aos="fade-up-right" data-aos-duration="500" data-aos-delay="100"></div>
 		<div class="shape" data-aos="fade-down-left" data-aos-duration="500" data-aos-delay="0"></div>
 	</div>
-	<div class="container">
-		<div class="row align-items-center">
-			<div class="col-md-6 order-2 order-md-1 text-center text-md-left">
-				<h1 class="text-white font-weight-bold mb-4">Эдутон 2022</h1>
-				<p class="text-white mb-5">
-					описание мероприятия.
-				</p>
-			</div>
-			<div class="col-md-6 text-center order-1 order-md-2">
-				
+	@if (mainModel is not null)
+	{
+		<div class="container">
+			<div class="row align-items-center">
+				<div class="col-md-6 order-2 order-md-1 text-center text-md-left">
+					<h1 class="text-white font-weight-bold mb-4">@mainModel.Title</h1>
+					<p class="text-white mb-5">
+						@mainModel.Description
+					</p>
+				</div>
+				<div class="col-md-6 text-center order-1 order-md-2">
+					<AuthorizeView>
+						<MudIconButton Icon="@Icons.Material.Filled.Edit" Variant="Variant.Filled" Color="Color.Error" Size="Size.Large" @onclick="(e) => Update(mainModel)" />
+					</AuthorizeView>
+				</div>
 			</div>
 		</div>
-	</div>
+	}
 </section>
 <!--====  End of Hero Section  ====-->
 
-<section class="section pt-0 position-relative pull-top">
+<section class="section pt-0 position-relative pull-top featured-article">
 	<div class="container">
 		<div class="rounded shadow p-5 bg-white">
 			<div class="row">
@@ -47,3 +56,35 @@
 		</div>
 	</div>
 </section>
+
+@code {
+
+	private MainPageModel mainModel;
+	DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+	protected override async Task OnInitializedAsync()
+	{
+		mainModel = await httpClient.GetFromJsonAsync<MainPageModel>("api/page/main");
+	}
+
+	private async Task Update(MainPageModel mainModel)
+	{
+		var parameters = new DialogParameters { ["mainModel"] = mainModel };
+
+		var dialog = DialogService.Show<MainPageUpdate>("Обновить раздел", parameters, maxWidth);
+		var result = await dialog.Result;
+		if (!result.Cancelled)
+		{
+			var response = await httpClient.PostAsJsonAsync<MainPageModel>($"api/page/update/main", result.Data as MainPageModel);
+			if (response.IsSuccessStatusCode)
+			{
+				mainModel = await response.Content.ReadFromJsonAsync<MainPageModel>();
+				Snackbar.Add("Информация успешно обновлена!", Severity.Success);
+			}
+			else
+			{
+				Snackbar.Add("Не могу обновить!", Severity.Error);
+			}
+		}
+	}
+}

@@ -1353,7 +1353,7 @@ hr {
     width: 80%;
   }
 }
-.blog-single .single-post .post-body .quote blockquote {
+.blog-single .single-post .post-body blockquote {
   color: #000;
   padding: 10px 0 10px 30px;
   text-align: left;
@@ -1904,5 +1904,11 @@ hr {
   .google-map #map_canvas {
     height: 350px;
   }
+}
+
+.contact-info {
+    color: #fffafa;
+    font-size: 21px;
+    margin: 5px,5px,0,5px;
 }
 /*# sourceMappingURL=style.css.map */

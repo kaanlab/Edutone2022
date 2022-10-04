@@ -1,31 +1,78 @@
 ﻿@page "/about"
 
+@inject HttpClient httpClient
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
 <!--====================================
 =            Single Article            =
 =====================================-->
+
 <section class="section blog-single">
-	<div class="container">
-		<div class="row">
-			<div class="col-md-10 m-auto">
-				<!-- Single Post -->
-				<article class="single-post">
-					<!-- Post title -->
-					<div class="post-title text-center">
-						<h1>Innovation distinguishes between a leader and a follower.</h1>						
-					</div>
-					<!-- Post body -->
-					<div class="post-body">
-						<!-- Feature Image -->
-						<div class="feature-image">
-							<img class="img-fluid" src="images/about-image.jpg" alt="feature-image">
-						</div>
-						<!-- Paragrapgh -->
-						<p>Praesent sapien massa, convallis a pellentesque nec, egestas non nisi. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec velit neque, auctor sit amet aliquam vel, ullamcorper sit amet ligula. Vestibulum ac diam sit amet quam vehicula elementum sed sit amet dui. Mauris blandit aliquet elit, eget tincidunt nibh pulvinar a.</p>
-						<p>Sed porttitor lectus nibh. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec velit neque, auctor sit amet aliquam vel, ullamcorper sit amet ligula. Vestibulum ac diam sit amet quam vehicula elementum sed sit amet dui. Mauris blandit aliquet elit, eget tincidunt nibh pulvinar a. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus magna justo, lacinia eget consectetur sed, convallis at tellus. Nulla porttitor accumsan tincidunt. Mauris blandit aliquet elit, eget tincidunt nibh pulvinar a. Curabitur arcu erat, accumsan id imperdiet et, porttitor at sem. Quisque velit nisi, pretium ut lacinia in, elementum id enim.</p>
-					</div>
-				</article>
-			</div>
-		</div>
-	</div>
+    <div class="container">
+        @if (aboutModel is not null)
+        {
+            <div class="row">
+                <div class="ml-auto">
+                    <AuthorizeView>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => Update(aboutModel)" />
+                    </AuthorizeView>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-10 m-auto">
+                    <!-- Single Post -->
+                    <article class="single-post">
+                        <!-- Post title -->
+                        <div class="post-title text-center">
+                            <h1>@aboutModel.Title</h1>
+                        </div>
+                        <!-- Post body -->
+                        <div class="post-body">
+                            <!-- Feature Image -->
+                            <div class="feature-image">
+                                <img class="img-fluid" src="images/about-image.jpg" alt="feature-image">
+                            </div>
+                            <!-- Paragrapgh -->
+                            <MudMarkdown Value="@aboutModel.Content" />
+                            @*@((MarkupString)aboutModel.Content)*@
+                        </div>
+                    </article>
+                </div>
+            </div>
+        }
+    </div>
 </section>
+
 <!--====  End of Single Article  ====-->
+@code {
+
+    private AboutPageModel aboutModel;
+    DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        aboutModel = await httpClient.GetFromJsonAsync<AboutPageModel>("api/page/about");
+    }
+
+    private async Task Update(AboutPageModel aboutModel)
+    {
+        var parameters = new DialogParameters { ["aboutModel"] = aboutModel };
+
+        var dialog = DialogService.Show<AboutPageUpdate>("Обновить раздел", parameters, maxWidth);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PostAsJsonAsync<AboutPageModel>($"api/page/update/about", result.Data as AboutPageModel);
+            if (response.IsSuccessStatusCode)
+            {
+                aboutModel = await response.Content.ReadFromJsonAsync<AboutPageModel>();
+                Snackbar.Add("Информация успешно обновлена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу обновить!", Severity.Error);
+            }
+        }
+    }
+}

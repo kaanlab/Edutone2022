@@ -4,6 +4,7 @@ using Edutone2022.Common.Models.User;
 using Edutone2022.Storage;
 using Edutone2022.Storage.Mapper;
 using Edutone2022.Storage.Models;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,12 +21,12 @@ namespace Edutone2022.WebApi.Services
             this.dbContext = dbContext;
         }
 
-        public async Task<bool> ChangePassword(AppUserChangePassRequest request)
+        public async Task<AppUserChangePassResponse> ChangePassword(AppUserChangePassRequest request)
         {
             var appUser = await userManager.FindByNameAsync(request.UserName);
             var result = await userManager.ChangePasswordAsync(appUser, request.CurrentPassword, request.Password);
-
-            return result.Succeeded;
+            var errors = string.Join(' ', result.Errors.Select(error => error.Description).ToArray());
+            return result.Succeeded ? new AppUserChangePassResponse { IsSucceed = true, Message = "Успешно!" } : new AppUserChangePassResponse { IsSucceed = false, Message = errors };
         }
 
         public async Task<AppUserModel> CreateUser(AppUserCreateRequest request)

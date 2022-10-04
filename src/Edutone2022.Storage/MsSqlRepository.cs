@@ -1,8 +1,12 @@
 ﻿using Edutone2022.Common.Interfaces;
 using Edutone2022.Common.Models;
 using Edutone2022.Common.Models.Article;
+using Edutone2022.Common.Models.Contact;
+using Edutone2022.Common.Models.Document;
+using Edutone2022.Common.Models.Page;
 using Edutone2022.Storage.Mapper;
 using Edutone2022.Storage.Models;
+
 using Microsoft.EntityFrameworkCore;
 
 
@@ -56,7 +60,7 @@ namespace Edutone2022.Storage
 
         public async Task<IEnumerable<ArticleModel>> GetArticles()
         {
-            var articles = await dbContext.Articles.Where(x => x.IsDeleted == false).Include(x => x.Author).Include(x => x.Image).ToArrayAsync();
+            var articles = await dbContext.Articles.Where(x => x.IsDeleted == false).Include(x => x.Author).Include(x => x.Image).OrderByDescending(a => a.CreationDate).ToArrayAsync();
             return Use.Mapper.Map<IEnumerable<ArticleModel>>(articles);
         }
         public async Task<ArticleModel> UpdateArticle(ArticleModel article)
@@ -76,14 +80,14 @@ namespace Edutone2022.Storage
             return Use.Mapper.Map<ArticleModel>(updatedArticle);
         }
 
-        public async Task<DocumentModel> CreateDocument(DocumentModel document)
+        public async Task<DocumentModel> CreateDocument(string uploadPath, DocumentAddRequest document)
         {
             var newDocument = new DocumentDb
             {
                 Id = Guid.NewGuid(),
                 Title = document.Title,
                 FileName = document.FileName,
-                UploadPath = document.UploadPath,
+                UploadPath = uploadPath,
                 CreationDate = DateTimeOffset.UtcNow,
                 IsDeleted = false
             };
@@ -91,8 +95,7 @@ namespace Edutone2022.Storage
             await dbContext.Documents.AddAsync(newDocument);
             await dbContext.SaveChangesAsync();
 
-            var a = Use.Mapper.Map<DocumentModel>(newDocument);
-            return a;
+            return Use.Mapper.Map<DocumentModel>(newDocument);
         }
 
         public async Task DeleteDocument(Guid id)
@@ -116,13 +119,13 @@ namespace Edutone2022.Storage
             return Use.Mapper.Map<IEnumerable<DocumentModel>>(documents);
         }
 
-        public async Task<DocumentModel> UpdateDocument(DocumentModel document)
+        public async Task<DocumentModel> UpdateDocument(string uploadPath, DocumentUpdateRequest document)
         {
             var updatedDocument = await dbContext.Documents.FirstOrDefaultAsync(x => x.Id == document.Id && x.IsDeleted == false);
 
             updatedDocument.Title = document.Title;
             updatedDocument.FileName = document.FileName;
-            updatedDocument.UploadPath = document.UploadPath;
+            updatedDocument.UploadPath = uploadPath;
 
             await dbContext.SaveChangesAsync();
 
@@ -141,9 +144,9 @@ namespace Edutone2022.Storage
             return Use.Mapper.Map<EmployeeContactModel>(contact);
         }
 
-        public async Task<EmployeeContactModel> CreateContact(EmployeeContactModel contact)
+        public async Task<EmployeeContactModel> CreateContact(ContactAddRequest contact)
         {
-            var image = await dbContext.Files.FirstOrDefaultAsync(x => x.Id == contact.Image.Id);
+            var image = contact.Image is not null ? await dbContext.Files.FirstOrDefaultAsync(x => x.Id == contact.Image.Id) : null;
             var newContact = new EmployeeContactDb()
             {
                 Id = Guid.NewGuid(),
@@ -160,14 +163,13 @@ namespace Edutone2022.Storage
             await dbContext.EmployeeContacts.AddAsync(newContact);
             await dbContext.SaveChangesAsync();
 
-            var a = Use.Mapper.Map<EmployeeContactModel>(newContact);
-            return a;
+            return Use.Mapper.Map<EmployeeContactModel>(newContact);
         }
 
         public async Task<EmployeeContactModel> UpdateContact(EmployeeContactModel contact)
         {
             var updatedContact = await dbContext.EmployeeContacts.FirstOrDefaultAsync(x => x.Id == contact.Id && x.IsDeleted == false);
-            var image = await dbContext.Files.FirstOrDefaultAsync(x => x.Id == contact.Image.Id);
+            var image = contact.Image is not null ? await dbContext.Files.FirstOrDefaultAsync(x => x.Id == contact.Image.Id) : null;
 
             updatedContact.Name = contact.Name;
             updatedContact.Responsibility = contact.Responsibility;
@@ -207,6 +209,38 @@ namespace Edutone2022.Storage
 
             var a = Use.Mapper.Map<FileModel>(newFile);
             return a;
+        }
+
+        public async Task<MainPageModel> SaveMainPage(MainPageModel mainPage)
+        {
+            var main = await dbContext.MainPages.FirstOrDefaultAsync();
+            main.Title = mainPage.Title;
+            main.Description = mainPage.Description;
+            await dbContext.SaveChangesAsync();
+
+            return new MainPageModel { Title = main.Title, Description = main.Description };
+        }
+
+        public async Task<MainPageModel> LoadMainPage()
+        {
+            var main = await dbContext.MainPages.FirstOrDefaultAsync();
+            return new MainPageModel { Title = main.Title, Description = main.Description };
+        }
+
+        public async Task<AboutPageModel> SaveAboutPage(AboutPageModel aboutPage)
+        {
+            var about = await dbContext.AboutPages.FirstOrDefaultAsync();
+            about.Title = aboutPage.Title;
+            about.Content = aboutPage.Content;
+            await dbContext.SaveChangesAsync();
+
+            return new AboutPageModel { Title = about.Title, Content = about.Content };
+        }
+
+        public async Task<AboutPageModel> LoadAboutPage()
+        {
+            var about = await dbContext.AboutPages.FirstOrDefaultAsync();
+            return new AboutPageModel { Title = about.Title, Content = about.Content };
         }
     }
 }

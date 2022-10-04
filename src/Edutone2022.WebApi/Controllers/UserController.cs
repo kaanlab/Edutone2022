@@ -51,7 +51,7 @@ namespace Edutone2022.WebApi.Controllers
         public async Task<IActionResult> ChangePassword(AppUserChangePassRequest request)
         {
             var result = await userService.ChangePassword(request);
-            return result ? NoContent() : BadRequest();
+            return result.IsSucceed ? NoContent() : BadRequest(result);
         }
 
         [Authorize(Roles = Global.Roles.ADMIN)]

@@ -15,40 +15,43 @@
     {
         foreach (var contact in employeeContacts)
         {
-            <!-- Article -->
-            <section class="simple-post">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="ml-auto">
-                            <AuthorizeView>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateContact(contact)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteContact(contact)" />
-                            </AuthorizeView>
-                        </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="row">
+                    <div class="ml-auto">
+                        <AuthorizeView>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateContact(contact)" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteContact(contact)" />
+                        </AuthorizeView>
                     </div>
-                   <!-- <div class="row">
-                        <div class="col-md-12">
-                            <div class="down-content">
-                                <h3>@article.Title</h3>
-                                @((MarkupString)article.Content)
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="ml-auto p-2">
-                            <MudAvatar Image="@(article.Avatar.UploadPath + "/" + article.Avatar.FileName)" />
-                        </div>
-                        <div>
-                            <p class="font-monospace">@article.UserName</p>
-                            <p class="text-muted">Опубликовано: @article.CreationDate</p>
-                            @if (article.UpdatedAt.HasValue)
-                            {
-                                <p class="text-muted">Обновлено: @article.UpdatedAt.Value</p>
-                            }
-                        </div>
-                     </div> -->
                 </div>
-            </section>
+                <!-- Team -->
+                <div class="team-sm">
+                    <!-- Team Member Image -->
+                    <div class="image">
+                         @if (contact.Image is not null)
+                        {
+                            <img class="w-100" src="@contact.Image.FullPath" alt="member-image">
+                        }
+                        else
+                        {
+                           <img class="w-100" src="images/blank-team.png" alt="member-image">
+                        }
+                        <!-- Social Contacts -->
+                        <div class="social-links">
+                            <ul class="list-inline">
+                                <li class="list-inline-item contact-info">@contact.Email</li>
+                                <li class="list-inline-item contact-info">@contact.PhoneNumber</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Name -->
+                    <h3>@contact.Name</h3>
+                    <!-- Position -->
+                    <cite>@contact.JobTitle</cite>
+                    <!-- Description -->
+                    <p>@contact.Responsibility</p>
+                </div>
+            </div>            
         }
     }
     else
@@ -71,18 +74,17 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        //articles = await httpClient.GetFromJsonAsync<List<AppArticle>>("api/article/all");
-
+        employeeContacts = await httpClient.GetFromJsonAsync<List<EmployeeContactModel>>("api/contact/all");
     }
 
     private async Task AddContact()
     {
-        var dialog = DialogService.Show<ContactAddOrUpdate>("Добавление контакта", maxWidth);
+        var dialog = DialogService.Show<ContactAdd>("Добавление контакта", maxWidth);
         var result = await dialog.Result;
 
         if (!result.Cancelled)
         {
-            var response = await httpClient.PostAsJsonAsync<EmployeeContactModel>("api/article/add", result.Data as EmployeeContactModel);
+            var response = await httpClient.PostAsJsonAsync<ContactAddRequest>("api/contact/add", result.Data as ContactAddRequest);
             if (response.IsSuccessStatusCode)
             {
                 var addedContact = await response.Content.ReadFromJsonAsync<EmployeeContactModel>();
@@ -96,20 +98,20 @@ else
         }
     }
 
-    private async Task UpdateContact(EmployeeContactModel employeeContact)
+    private async Task UpdateContact(EmployeeContactModel contact)
     {
-        var parameters = new DialogParameters { ["employeeContact"] = employeeContact };
+        var parameters = new DialogParameters { ["contact"] = contact };
 
-        var dialog = DialogService.Show<ContactAddOrUpdate>("Обновить контакт", parameters, maxWidth);
+        var dialog = DialogService.Show<ContactUpdate>("Обновить контакт", parameters, maxWidth);
         var result = await dialog.Result;
         if (!result.Cancelled)
         {
-            var response = await httpClient.PutAsJsonAsync<EmployeeContactModel>("api/article/update", result.Data as EmployeeContactModel);
+            var response = await httpClient.PutAsJsonAsync<EmployeeContactModel>($"api/contact/update/{contact.Id}", result.Data as EmployeeContactModel);
             if (response.IsSuccessStatusCode)
             {
                 var updatedContact = await response.Content.ReadFromJsonAsync<EmployeeContactModel>();
-                var index = employeeContacts.IndexOf(employeeContact);
-                employeeContacts.Remove(employeeContact);
+                var index = employeeContacts.IndexOf(contact);
+                employeeContacts.Remove(contact);
                 employeeContacts.Insert(index, updatedContact);
                 Snackbar.Add("Информация успешно обновлена!", Severity.Success);
             }
@@ -129,7 +131,7 @@ else
         if (!result.Cancelled)
         {
             var contactToDelete = result.Data as EmployeeContactModel;
-            var response = await httpClient.DeleteAsync($"api/article/delete/{contactToDelete.Id}");
+            var response = await httpClient.DeleteAsync($"api/contact/delete/{contactToDelete.Id}");
             if (response.IsSuccessStatusCode)
             {
                 employeeContacts.Remove(contactToDelete);
@@ -139,7 +141,6 @@ else
             {
                 Snackbar.Add("Не могу удалить контакт!", Severity.Error);
             }
-
         }
     }
 }

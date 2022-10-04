@@ -1,7 +1,10 @@
-﻿using Edutone2022.Common.Interfaces;
+﻿using Azure.Core;
+using Edutone2022.Common.Interfaces;
 using Edutone2022.Common.Models;
+using Edutone2022.Common.Models.Document;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 
 namespace Edutone2022.WebApi.Controllers
 {
@@ -9,11 +12,14 @@ namespace Edutone2022.WebApi.Controllers
     [ApiController]
     public sealed class DocumentController : ControllerBase
     {
+        private readonly string _uploadPath = Path.Combine("upload", "docs");
+        private readonly IWebHostEnvironment hostEnvironment;
         private readonly IRepository repository;
 
-        public DocumentController(IRepository repository)
+        public DocumentController(IRepository repository, IWebHostEnvironment hostEnvironment)
         {
             this.repository = repository;
+            this.hostEnvironment = hostEnvironment;
         }
 
         [HttpGet("all")]
@@ -23,14 +29,18 @@ namespace Edutone2022.WebApi.Controllers
         [Authorize]
         [HttpPost("add")]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(DocumentModel))]
-        public async Task<IActionResult> Add(DocumentModel document) => Ok(await repository.CreateDocument(document));
+        public async Task<IActionResult> Add(DocumentAddRequest request)
+        {
+            await SaveOnDisk(request.FileName, request.FileContent);
+            return Ok(await repository.CreateDocument(_uploadPath, request));
+        }
 
         [Authorize]
         [HttpPut("update/{documentId:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DocumentModel))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update(Guid documentId, DocumentModel document)
+        public async Task<IActionResult> Update(Guid documentId, DocumentUpdateRequest document)
         {
             var updatedDocument = await repository.GetDocumentById(documentId);
             if (updatedDocument is null)
@@ -43,7 +53,8 @@ namespace Edutone2022.WebApi.Controllers
                 return BadRequest();
             }
 
-            return Ok(await repository.UpdateDocument(document));
+            await SaveOnDisk(document.FileName, document.FileContent);
+            return Ok(await repository.UpdateDocument(_uploadPath, document));
         }
 
         [Authorize]
@@ -61,6 +72,18 @@ namespace Edutone2022.WebApi.Controllers
             await repository.DeleteDocument(documentId);
 
             return NoContent();
+        }
+
+        private async Task SaveOnDisk(string fileName, byte[] fileContent)
+        {
+            var dirPath = Path.Combine(hostEnvironment.ContentRootPath, _uploadPath);
+            Directory.CreateDirectory(dirPath);
+            var fullPath = Path.Combine(dirPath, fileName);
+
+            using (var fileStream = System.IO.File.Create(fullPath))
+            {
+                await fileStream.WriteAsync(fileContent);
+            }
         }
     }
 }

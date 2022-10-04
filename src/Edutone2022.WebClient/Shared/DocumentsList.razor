@@ -1,5 +1,138 @@
-﻿<h3>DocumentsList</h3>
+﻿@inject HttpClient httpClient
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div>
+    <AuthorizeView>
+        <MudIconButton Icon="@Icons.Material.Filled.AddBox" Color="Color.Primary" Size="Size.Large" @onclick="AddDocument" Class="mr-3" />
+    </AuthorizeView>
+</div>
+
+@if (documents is not null)
+{
+    @if (documents.Count > 0)
+    {
+        foreach (var document in documents)
+        {
+            <!-- Job List -->
+            <div class="job">                
+                <div class="content">
+                    <!-- Job Title -->
+                    <h3>@document.Title</h3>
+                    <!-- Location -->
+                    <p>@document.FileName</p>
+                </div>
+                <!-- Action Button -->
+                <div class="apply-button">
+                    <a href="@document.FullPath" class="btn btn-main-sm">Скачать</a>
+                </div>
+                <div class="row">
+                    <div class="ml-auto">
+                        <AuthorizeView>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateDocument(document)" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteDocument(document)" />
+                        </AuthorizeView>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-md-4">
+            <MudAlert Severity="Severity.Normal">документов нет...</MudAlert>
+        </div>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Загрузка документов...</MudAlert>
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}
+
 
 @code {
+    List<DocumentModel> documents;
 
+    DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        documents = await httpClient.GetFromJsonAsync<List<DocumentModel>>("api/document/all");
+    }
+
+    private async Task AddDocument()
+    {
+        var dialog = DialogService.Show<DocumentAdd>("Добавление документа", maxWidth);
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PostAsJsonAsync<DocumentAddRequest>("api/document/add", result.Data as DocumentAddRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                var addedDocument = await response.Content.ReadFromJsonAsync<DocumentModel>();
+                documents.Add(addedDocument);
+                Snackbar.Add("Документ успешно добавлен!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу добавить документ!", Severity.Error);
+            }
+        }
+    }
+
+    private async Task UpdateDocument(DocumentModel document)
+    {
+        var documentUpdateModel = new DocumentUpdateRequest
+            {
+                Id = document.Id,
+                CreationDate = document.CreationDate,
+                FileName = document.FileName,
+                Title = document.Title
+            };
+        var parameters = new DialogParameters { ["documentUpdateModel"] = documentUpdateModel };
+
+        var dialog = DialogService.Show<DocumentUpdate>("Обновить документ", parameters, maxWidth);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var response = await httpClient.PutAsJsonAsync<DocumentUpdateRequest>($"api/document/update/{document.Id}", result.Data as DocumentUpdateRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedDocument = await response.Content.ReadFromJsonAsync<DocumentModel>();
+                var index = documents.IndexOf(document);
+                documents.Remove(document);
+                documents.Insert(index, updatedDocument);
+                Snackbar.Add("Информация успешно обновлена!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу обновить документ!", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteDocument(DocumentModel document)
+    {
+        var parameters = new DialogParameters { ["document"] = document };
+
+        var dialog = DialogService.Show<DocumentDelete>("Удалить документ", parameters);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var documentToDelete = result.Data as DocumentModel;
+            var response = await httpClient.DeleteAsync($"api/document/delete/{documentToDelete.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                documents.Remove(documentToDelete);
+                Snackbar.Add("Документ успешно удален!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Не могу удалить документ!", Severity.Error);
+            }
+
+        }
+    }
 }

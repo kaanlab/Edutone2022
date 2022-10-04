@@ -2,14 +2,14 @@
     <DialogContent>
         <EditForm EditContext="@editContext">
             <DataAnnotationsValidator />
-            <MudField Label="Название училища" Class="mt-3">@Context.DisplayName</MudField>
-            <MudField Label="Логин" Class="mt-3">@Context.UserName</MudField>
+            <MudField Label="Название училища" Class="mt-3">@AppUserModel.DisplayName</MudField>
+            <MudField Label="Логин" Class="mt-3">@AppUserModel.UserName</MudField>
             <MudTextField Label="Действующий пароль" Class="mt-3" InputType="InputType.Password"
-                          @bind-Value="Context.CurrentPassword" For="@(() => Context.CurrentPassword)" />
+                          @bind-Value="AppUserModel.CurrentPassword" For="@(() => AppUserModel.CurrentPassword)" />
             <MudTextField Label="Новый пароль" Class="mt-3" InputType="InputType.Password"
-                          @bind-Value="Context.Password" For="@(() => Context.Password)" />
+                          @bind-Value="AppUserModel.Password" For="@(() => AppUserModel.Password)" />
             <MudTextField Label="Повторить ввод нового пароля" Class="mt-3" InputType="InputType.Password"
-                          @bind-Value="Context.ConfirmPassword" For="@(() => Context.ConfirmPassword)" />
+                          @bind-Value="AppUserModel.ConfirmPassword" For="@(() => AppUserModel.ConfirmPassword)" />
         </EditForm>
     </DialogContent>
     <DialogActions>
@@ -24,7 +24,7 @@
     MudDialogInstance MudDialog { get; set; }
 
     [Parameter]
-    public AppUserChangePassRequest Context { get; set; } = new AppUserChangePassRequest();
+    public AppUserChangePassRequest AppUserModel { get; set; } = new AppUserChangePassRequest();
 
     private bool formInvalid = true;
     private EditContext editContext;
@@ -32,7 +32,7 @@
 
     protected override void OnInitialized()
     {
-        editContext = new EditContext(Context);
+        editContext = new EditContext(AppUserModel);
         editContext.OnFieldChanged += HandleFieldChanged;
     }
 
@@ -43,7 +43,7 @@
     }
 
 
-    void AddOrUpdate() => MudDialog.Close(DialogResult.Ok(Context));
+    void AddOrUpdate() => MudDialog.Close(DialogResult.Ok(AppUserModel));
 
     void Cancel() => MudDialog.Cancel();
 }

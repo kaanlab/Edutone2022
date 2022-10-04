@@ -19,6 +19,8 @@ namespace Edutone2022.Storage.Mapper
 
             CreateMap<FileDb, FileModel>();
             CreateMap<DocumentDb, DocumentModel>();
+            CreateMap<AppUserDb, AppUserModel>()
+                .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.Avatar));
         }
     }
 }

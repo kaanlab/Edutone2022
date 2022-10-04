@@ -1,0 +1,67 @@
+﻿<MudDialog>
+    <DialogContent>
+        <EditForm EditContext="@editContext">
+            <DataAnnotationsValidator />
+
+            <InputFile id="fileInput" OnChange="UploadFile" hidden accept=".jpg, .jpeg, .png, .doc, .docx, .pdf, .pptx" />
+            <MudFab HtmlTag="label"
+                    Color="Color.Secondary"
+                    Icon="@Icons.Filled.Image"
+                    Label="Загрузить документ"
+                    for="fileInput" />
+            @if (file is not null)
+            {
+                <MudListItem Icon="@Icons.Filled.AttachFile">
+                    @file.Name <code>@file.Size байт</code>
+                </MudListItem>
+            }
+
+            <MudTextField Label="Название" Class="mt-3" Lines="2" @bind-Value="DocumentUpdateModel.Title" For="@(() => DocumentUpdateModel.Title)" />
+            <MudText Typo="Typo.body2" Class="my-4">Название</MudText>
+
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Info" OnClick="Update" Disabled="@formInvalid">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public DocumentUpdateRequest DocumentUpdateModel { get; set; } = new();
+
+    private bool formInvalid = true;
+    private EditContext editContext;
+    IBrowserFile file;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(DocumentUpdateModel);
+        editContext.OnFieldChanged += HandleFieldChanged;
+    }
+
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    {
+        formInvalid = !editContext.Validate();
+        StateHasChanged();
+    }
+
+    private void UploadFile(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+        DocumentUpdateModel.FileContent = new byte[file.Size];
+        DocumentUpdateModel.FileName = file.Name;
+    }
+
+    async Task Update()
+    {
+        MudDialog.Close(DialogResult.Ok(DocumentUpdateModel));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

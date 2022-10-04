@@ -36,6 +36,20 @@ namespace Edutone2022.WebApi
                 await userManager.CreateAsync(user, "1Password!");
                 await userManager.AddToRoleAsync(user, Global.Roles.USER);
             }
+
+            if(!context.AboutPages.Any())
+            {
+                var about = new AboutPageDb { Id = Guid.NewGuid(), CreationDate = DateTimeOffset.UtcNow, IsDeleted = false, Title = "About title", Content = "About content" };
+                await context.AboutPages.AddAsync(about);
+                await context.SaveChangesAsync();
+            }
+
+            if(!context.MainPages.Any())
+            {
+                var main = new MainPageDb { Id = Guid.NewGuid(), CreationDate = DateTimeOffset.UtcNow, IsDeleted = false, Title = "Main title", Description = "Main description" };
+                await context.MainPages.AddAsync(main);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

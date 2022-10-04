@@ -15,39 +15,56 @@
         foreach (var article in articles)
         {
             <!-- Article -->
-            <section class="simple-post">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="ml-auto">
-                            <AuthorizeView>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateArticle(article)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteArticle(article)" />
-                            </AuthorizeView>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="down-content">
-                                <h3>@article.Title</h3>
-                                @((MarkupString)article.Content)
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="ml-auto p-2">
-                            <!--<MudAvatar Image="@(article.Avatar.UploadPath + "/" + article.Avatar.FileName)" />-->
-                        </div>
-                        <div>
-                            <p class="font-monospace">@article.UserName</p>
-                            <p class="text-muted">Опубликовано: @article.CreationDate</p>
-                            @if (article.UpdatedAt.HasValue)
-                            {
-                                <p class="text-muted">Обновлено: @article.UpdatedAt.Value</p>
-                            }
-                        </div>
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="ml-auto">
+                        <AuthorizeView>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" @onclick="(e) => UpdateArticle(article)" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Default" @onclick="(e) => DeleteArticle(article)" />
+                        </AuthorizeView>
                     </div>
                 </div>
-            </section>
+                <article class="featured">
+                    <!-- Image -->
+                    <div class="image">
+                        @if (article.Image is not null)
+                        {
+                            <img class="img-fluid" src="@article.Image.FullPath" alt="featured-article">
+                        }
+                        else
+                        {
+                            <img class="img-fluid" src="images/empty.png" alt="featured-article">
+                        }
+                    </div>
+                    <!-- written-content -->
+                    <div class="content">
+                        <!-- Post Title -->
+                        <h2>@article.Title</h2>
+                        <!-- Tags -->
+                        <ul class="list-inline post-tag">
+                            <li class="list-inline-item">
+                                @if (article.Avatar is not null)
+                                {
+                                    <img class="img-fluid" src="@article.Avatar.FullPath" alt="author-thumb">
+                                }
+                                else
+                                {
+                                    <img class="img-fluid" src="images/blank-avatar.png" alt="featured-article">
+                                }
+                            </li>
+                            <li class="list-inline-item">
+                                @article.UserName
+                            </li>
+                            <li class="list-inline-item">
+                                @article.CreationDate.ToString("dd MMMM yyyy")
+                            </li>
+                        </ul>
+                        <!-- Post Body -->
+                        <p>@article.Content</p>
+
+                    </div>
+                </article>
+            </div>
         }
     }
     else
@@ -85,7 +102,7 @@ else
             {
                 var addedArticle = await response.Content.ReadFromJsonAsync<ArticleModel>();
                 articles.Add(addedArticle);
-                articles = articles.OrderByDescending(a => a.Id).ToList();
+                articles = articles.OrderByDescending(a => a.CreationDate).ToList();
                 Snackbar.Add("Новость успешно добавлена!", Severity.Success);
             }
             else

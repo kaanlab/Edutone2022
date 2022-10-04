@@ -1,5 +1,6 @@
 ﻿using Edutone2022.Common.Interfaces;
 using Edutone2022.Common.Models;
+using Edutone2022.Common.Models.Contact;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,7 +24,7 @@ namespace Edutone2022.WebApi.Controllers
         [Authorize]
         [HttpPost("add")]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(EmployeeContactModel))]
-        public async Task<IActionResult> Add(EmployeeContactModel contact) => Ok(await repository.CreateContact(contact));        
+        public async Task<IActionResult> Add(ContactAddRequest request) => Ok(await repository.CreateContact(request));        
 
         [Authorize]
         [HttpPut("update/{contactId:Guid}")]

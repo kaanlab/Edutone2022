@@ -1,5 +1,6 @@
 ﻿@inject HttpClient httpClient
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
 
 <!-- Nav Menu -->
 <nav class="navbar main-nav navbar-expand-lg px-2 px-sm-0 py-2 py-lg-0">
@@ -11,25 +12,51 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item dropdown active">
-                    <a class="nav-link dropdown-toggle" href="/" data-toggle="dropdown">
-                        Новости
-                        <span><i class="ti-angle-down"></i></span>
-                    </a>
+                <li class="nav-item @GetActive("", NavLinkMatch.All)">
+                    <NavLink class="nav-link" href="" Match=@NavLinkMatch.All>Новости</NavLink>
                 </li>
-                <li class="nav-item @@about">
-                    <a class="nav-link" href="about">О проекте</a>
+                <li class="nav-item @GetActive("about", NavLinkMatch.All)">
+                    <NavLink class="nav-link" href="about" Match=@NavLinkMatch.All>О проекте</NavLink>
                 </li>
-                <li class="nav-item @@docs">
-                    <a class="nav-link" href="docs">Документы</a>
+                <li class="nav-item @GetActive("docs", NavLinkMatch.All)">
+                    <NavLink class="nav-link" href="docs" Match=@NavLinkMatch.All>Документы</NavLink>
                 </li>
-                <li class="nav-item @@contacts">
-                    <a class="nav-link" href="contacts">Контакты</a>
+                <li class="nav-item @GetActive("contacts", NavLinkMatch.All)">
+                    <NavLink class="nav-link" href="contacts" Match=@NavLinkMatch.All>Контакты</NavLink>
                 </li>
-                <li class="nav-item @@login">
-                    <a class="nav-link" href="login">Вход</a>
-                </li>
+
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="nav-item @GetActive("logout", NavLinkMatch.All)">
+                            <NavLink class="nav-link" href="logout" Match=@NavLinkMatch.All>Выход</NavLink>
+                        </li>
+                    </Authorized>
+                    <NotAuthorized>
+                        <li class="nav-item @GetActive("login", NavLinkMatch.All)">
+                            <NavLink class="nav-link" href="login" Match=@NavLinkMatch.All>Вход</NavLink>
+                        </li>
+                    </NotAuthorized>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="@Global.Roles.ADMIN">
+                    <li class="nav-item @GetActive("admin", NavLinkMatch.All)">
+                        <NavLink class="nav-link" href="admin" Match=@NavLinkMatch.All>Админ</NavLink>
+                    </li>
+                </AuthorizeView>
             </ul>
         </div>
     </div>
 </nav>
+
+@code {
+
+    string GetActive(string href, NavLinkMatch navLinkMatch = NavLinkMatch.Prefix) => IsActive(href, navLinkMatch) ? "active" : "";
+
+    protected override void OnInitialized() => NavigationManager.LocationChanged += (s, e) => StateHasChanged();
+
+    bool IsActive(string href, NavLinkMatch navLinkMatch = NavLinkMatch.Prefix)
+    {
+        var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLower();
+        return navLinkMatch == NavLinkMatch.All ? relativePath == href.ToLower() : relativePath.StartsWith(href.ToLower());
+    }
+}

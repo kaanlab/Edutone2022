@@ -1,5 +1,21 @@
-﻿<h3>ContactDelete</h3>
+﻿<MudDialog>
+    <DialogContent>
+        <MudText>@Contact.Name</MudText>
+        <div>@Contact.JobTitle</div>
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="Delete">Удалить</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
 
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public EmployeeContactModel Contact { get; set; }
+
+    void Delete() => MudDialog.Close(DialogResult.Ok(Contact));
+    void Cancel() => MudDialog.Cancel();
 }

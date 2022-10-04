@@ -1,14 +1,10 @@
-﻿using Edutone2022.Common;
-using Edutone2022.Common.Interfaces;
+﻿using Edutone2022.Common.Interfaces;
 using Edutone2022.Common.Models;
 using Edutone2022.Common.Models.File;
-using Edutone2022.Storage.Models;
+
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
-using System.IO;
-using static Edutone2022.Common.Global;
+
 
 namespace Edutone2022.WebApi.Controllers
 {
@@ -28,21 +24,41 @@ namespace Edutone2022.WebApi.Controllers
         [Authorize]
         [HttpPost("article")]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(FileModel))]
-        public async Task<IActionResult> UploadAvatar(UploadFileRequest request )
+        public async Task<IActionResult> UploadArticleImage(UploadFileRequest request )
         {
             var uploadPath = Path.Combine("upload", "articles");
             var dirPath = Path.Combine(hostEnvironment.ContentRootPath, uploadPath);
             Directory.CreateDirectory(dirPath);
             var fullPath = Path.Combine(dirPath, request.FileName);
 
-            using (var stream = new FileStream(fullPath, FileMode.Create)) 
-            { 
-                stream.Write(request.FileContent, 0, request.FileContent.Length);
+            using (var fileStream = System.IO.File.Create(fullPath))
+            {
+                await fileStream.WriteAsync(request.FileContent);
             }
 
             var fileModel = await repository.SaveFile(request.FileName, uploadPath);
 
             return Ok(fileModel);
         }
+
+        [Authorize]
+        [HttpPost("contact")]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(FileModel))]
+        public async Task<IActionResult> UploadContactImage(UploadFileRequest request)
+        {
+            var uploadPath = Path.Combine("upload", "contacts");
+            var dirPath = Path.Combine(hostEnvironment.ContentRootPath, uploadPath);
+            Directory.CreateDirectory(dirPath);
+            var fullPath = Path.Combine(dirPath, request.FileName);
+
+            using (var fileStream = System.IO.File.Create(fullPath))
+            {
+                await fileStream.WriteAsync(request.FileContent);
+            }
+
+            var fileModel = await repository.SaveFile(request.FileName, uploadPath);
+
+            return Ok(fileModel);
+        }        
     }
 }

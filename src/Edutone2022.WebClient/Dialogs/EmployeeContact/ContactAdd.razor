@@ -1,0 +1,98 @@
+﻿@inject HttpClient httpClient
+
+<MudDialog>
+    <DialogContent>
+        <EditForm EditContext="@editContext">
+            <DataAnnotationsValidator />
+
+            <img src="@imgUrl">
+            <InputFile id="fileInput" OnChange="UploadFiles" hidden accept=".jpg, .jpeg, .png" />
+            <MudFab HtmlTag="label"
+                    Color="Color.Secondary"
+                    Icon="@Icons.Filled.Image"
+                    Label="Load picture"
+                    for="fileInput" />
+
+            <MudTextField Label="Ф.И.О." Class="mt-3" Lines="2" @bind-Value="Contact.Name" For="@(() => Contact.Name)" />
+            <MudText Typo="Typo.body2" Class="my-4">Ф.И.О.</MudText>
+
+            <MudTextField Label="Должность" Class="mt-3" Lines="2" @bind-Value="Contact.JobTitle" For="@(() => Contact.JobTitle)" />
+            <MudText Typo="Typo.body2" Class="my-4">Должность</MudText>
+
+            <MudTextField Label="Какие вопросы курирует?" Class="mt-3" Lines="2" @bind-Value="Contact.Responsibility" For="@(() => Contact.Responsibility)" />
+            <MudText Typo="Typo.body2" Class="my-4">Какие вопросы курирует?</MudText>
+
+            <MudTextField Label="Почта" Class="mt-3" Lines="2" @bind-Value="Contact.Email" For="@(() => Contact.Email)" />
+            <MudText Typo="Typo.body2" Class="my-4">Почта</MudText>
+
+            <MudTextField Label="Телефон" Class="mt-3" Lines="2" @bind-Value="Contact.PhoneNumber" For="@(() => Contact.PhoneNumber)" />
+            <MudText Typo="Typo.body2" Class="my-4">Телефон</MudText>
+
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Info" OnClick="Add" Disabled="@formInvalid">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public ContactAddRequest Contact { get; set; } = new();
+
+    IBrowserFile file;
+    string imgUrl;
+    private bool formInvalid = true;
+    private EditContext editContext;
+    UploadFileRequest uploadFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(Contact);
+        editContext.OnFieldChanged += HandleFieldChanged;
+    }
+
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    {
+        formInvalid = !editContext.Validate();
+        StateHasChanged();
+    }
+
+    private async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+        var buffers = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffers);
+        string imageType = file.ContentType;
+        imgUrl = $"data:{imageType};base64,{Convert.ToBase64String(buffers)}";
+        uploadFile = new UploadFileRequest
+            {
+                FileContent = buffers,
+                FileName = file.Name
+            };
+    }
+
+    private async Task Add()
+    {
+        if (uploadFile is not null)
+        {
+            var response = await httpClient.PostAsJsonAsync<UploadFileRequest>("/api/upload/contact", uploadFile);
+            if (response.IsSuccessStatusCode)
+            {
+                var fileModel = await response.Content.ReadFromJsonAsync<FileModel>();
+                Contact.Image = fileModel;
+            }
+        }
+
+        MudDialog.Close(DialogResult.Ok(Contact));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

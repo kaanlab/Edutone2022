@@ -12,5 +12,7 @@ namespace Edutone2022.Storage
         public DbSet<DocumentDb> Documents { get; set; }
         public DbSet<EmployeeContactDb> EmployeeContacts { get; set; }
         public DbSet<FileDb> Files { get; set; }
+        public DbSet<AboutPageDb> AboutPages { get; set; }
+        public DbSet<MainPageDb> MainPages { get; set; }
     }
 }

@@ -1,0 +1,20 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudText>@Document.Title</MudText>
+        <MudText>@Document.FileName</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="Delete">Удалить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public DocumentModel Document { get; set; }
+
+    void Delete() => MudDialog.Close(DialogResult.Ok(Document));
+    void Cancel() => MudDialog.Cancel();
+}

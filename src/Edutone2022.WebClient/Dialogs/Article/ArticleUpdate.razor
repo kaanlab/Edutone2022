@@ -1,21 +1,39 @@
-﻿@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
+﻿@inject HttpClient httpClient
 
 <MudDialog>
     <DialogContent>
         <EditForm EditContext="@editContext">
             <DataAnnotationsValidator />
 
+            @if(imgUrl is not null)
+            {
+                <img src="@imgUrl">
+            }
+            else
+            {
+                if(Article.Image is not null)
+                {
+                    <img src="@Article.Image.FullPath">
+                }
+            }
+            <InputFile id="fileInput" OnChange="UploadFiles" hidden accept=".jpg, .jpeg, .png" />
+            <MudFab HtmlTag="label"
+                    Color="Color.Secondary"
+                    Icon="@Icons.Filled.Image"
+                    Label="Load picture"
+                    for="fileInput" />
+
             <MudTextField Label="Название" Class="mt-3" Lines="2" @bind-Value="Article.Title" For="@(() => Article.Title)" />
             <MudText Typo="Typo.body2" Class="my-4">Название</MudText>
 
-            <MudTextField Label="Содержание" Class="mt-3" Lines="2" @bind-Value="Article.Content" For="@(() => Article.Title)" />
+            <MudTextField Label="Содержание" Class="mt-3" Lines="2" @bind-Value="Article.Content" For="@(() => Article.Content)" />
             <MudText Typo="Typo.body2" Class="my-4">Содержание</MudText>
            
         </EditForm>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Отменить</MudButton>
-        <MudButton ButtonType="ButtonType.Submit" Color="Color.Info" OnClick="AddOrUpdate" Disabled="@formInvalid">Сохранить</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Info" OnClick="Update" Disabled="@formInvalid">Сохранить</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -30,10 +48,14 @@
     [Parameter]
     public ArticleModel Article { get; set; } = new ArticleModel();
 
-    string uploadUrl;
+
+    IBrowserFile file;
+    string imgUrl;
     private bool formInvalid = true;
     private EditContext editContext;
     private string authUserId;
+    UploadFileRequest uploadFile;
+
 
 
     protected override async Task OnInitializedAsync()
@@ -43,9 +65,6 @@
 
         editContext = new EditContext(Article);
         editContext.OnFieldChanged += HandleFieldChanged;
-
-        var builder = WebAssemblyHostBuilder.CreateDefault();
-        uploadUrl = $@"{builder.HostEnvironment.BaseAddress}api/file/upload";
     }
 
     private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
@@ -54,10 +73,32 @@
         StateHasChanged();
     }
 
+    private async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+        var buffers = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffers);
+        string imageType = file.ContentType;
+        imgUrl = $"data:{imageType};base64,{Convert.ToBase64String(buffers)}";
+        uploadFile = new UploadFileRequest
+            {
+                FileContent = buffers,
+                FileName = file.Name
+            };
+    }
 
-    void AddOrUpdate()
+    async Task Update()
     {
         Article.UserId = authUserId;
+        if (uploadFile is not null)
+        {
+            var response = await httpClient.PostAsJsonAsync<UploadFileRequest>("/api/upload/article", uploadFile);
+            if (response.IsSuccessStatusCode)
+            {
+                var fileModel = await response.Content.ReadFromJsonAsync<FileModel>();
+                Article.Image = fileModel;
+            }        
+        }
         MudDialog.Close(DialogResult.Ok(Article));
     }
 

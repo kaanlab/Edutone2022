@@ -21,9 +21,16 @@
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Изображение">
-                <img class="img-thumbnail" src="@context.Avatar.FullPath" style="min-height:100px;height:100px;" />
+                @if (context.Avatar is not null)
+                {
+                    <img class="img-fluid" src="@context.Avatar.FullPath" alt="author-thumb">
+                }
+                else
+                {
+                    <img class="img-fluid" src="images/blank-avatar.png" alt="featured-article">
+                }
             </MudTd>
-            <MudTd DataLabel="Название училища">@context.DisplayName</MudTd>
+            <MudTd DataLabel="Имя пользователя">@context.DisplayName</MudTd>
             <MudTd DataLabel="Логин">@context.UserName</MudTd>
             <MudTd DataLabel="Почта">@context.Email</MudTd>
             <MudTd><MudButton Color="Color.Info" @onclick="@((e) => UpdateUser(context))">Изменить</MudButton></MudTd>
@@ -101,7 +108,7 @@ else
     private async Task ChangePassword(AppUserModel context)
     {
         var appUserModel = new AppUserChangePassRequest { DisplayName = context.DisplayName, UserName = context.UserName };
-        var parameters = new DialogParameters { ["context"] = appUserModel };
+        var parameters = new DialogParameters { ["appUserModel"] = appUserModel };
 
         var dialog = DialogService.Show<UserChangePass>("Сменить пароль пользователя", parameters);
         var result = await dialog.Result;
@@ -115,7 +122,8 @@ else
             }
             else
             {
-                Snackbar.Add("Не могу обновить пароль!", Severity.Error);
+                var errors = await response.Content.ReadFromJsonAsync<AppUserChangePassResponse>();
+                Snackbar.Add($"Не могу обновить пароль! {errors.Message}", Severity.Error);
             }
         }
     }
