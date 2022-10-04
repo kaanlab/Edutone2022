@@ -78,6 +78,7 @@ else
     {
         var appUserModel = new AppUserUpdateRequest
             {
+                Id = context.Id,
                 DisplayName = context.DisplayName,
                 Email = context.Email,
                 Avatar = context.Avatar,
@@ -89,7 +90,7 @@ else
         var result = await dialog.Result;
         if (!result.Cancelled)
         {
-            var response = await httpClient.PutAsJsonAsync<AppUserUpdateRequest>("api/user/update", result.Data as AppUserUpdateRequest);
+            var response = await httpClient.PutAsJsonAsync<AppUserUpdateRequest>($"api/user/update/{context.Id}", result.Data as AppUserUpdateRequest);
             if (response.IsSuccessStatusCode)
             {
                 var updatedUser = await response.Content.ReadFromJsonAsync<AppUserModel>();

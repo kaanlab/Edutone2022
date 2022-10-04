@@ -56,7 +56,7 @@ namespace Edutone2022.WebApi.Services
 
         public async Task<IEnumerable<AppUserModel>> GetUsers()
         {
-            var users = await userManager.Users.ToListAsync();
+            var users = await userManager.Users.Include(x => x.Avatar).ToListAsync();
             return Use.Mapper.Map<IEnumerable<AppUserModel>>(users);
         }
 

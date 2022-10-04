@@ -16,7 +16,7 @@
                     <img class="img-fluid" src="@Article.Image.FullPath">
                 }
             }
-            <InputFile id="fileInput" OnChange="UploadFiles" hidden accept=".jpg, .jpeg, .png" />
+            <InputFile id="fileInput" OnChange="UploadFile" hidden accept=".jpg, .jpeg, .png" />
             <MudFab HtmlTag="label"
                     Color="Color.Secondary"
                     Icon="@Icons.Filled.Image"
@@ -73,7 +73,7 @@
         StateHasChanged();
     }
 
-    private async Task UploadFiles(InputFileChangeEventArgs e)
+    private async Task UploadFile(InputFileChangeEventArgs e)
     {
         file = e.File;
         var buffers = new byte[file.Size];

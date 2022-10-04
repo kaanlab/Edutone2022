@@ -60,7 +60,7 @@ namespace Edutone2022.Storage
 
         public async Task<IEnumerable<ArticleModel>> GetArticles()
         {
-            var articles = await dbContext.Articles.Where(x => x.IsDeleted == false).Include(x => x.Author).Include(x => x.Image).OrderByDescending(a => a.CreationDate).ToArrayAsync();
+            var articles = await dbContext.Articles.Where(x => x.IsDeleted == false).Include(x => x.Author).ThenInclude(y => y.Avatar).Include(x => x.Image).OrderByDescending(a => a.CreationDate).ToArrayAsync();
             return Use.Mapper.Map<IEnumerable<ArticleModel>>(articles);
         }
         public async Task<ArticleModel> UpdateArticle(ArticleModel article)

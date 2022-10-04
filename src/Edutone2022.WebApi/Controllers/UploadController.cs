@@ -1,4 +1,5 @@
-﻿using Edutone2022.Common.Interfaces;
+﻿using Edutone2022.Common;
+using Edutone2022.Common.Interfaces;
 using Edutone2022.Common.Models;
 using Edutone2022.Common.Models.File;
 
@@ -59,6 +60,26 @@ namespace Edutone2022.WebApi.Controllers
             var fileModel = await repository.SaveFile(request.FileName, uploadPath);
 
             return Ok(fileModel);
-        }        
+        }
+
+        [Authorize(Roles = Global.Roles.ADMIN)]
+        [HttpPost("avatar")]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(FileModel))]
+        public async Task<IActionResult> UploadAvatar(UploadFileRequest request)
+        {
+            var uploadPath = Path.Combine("upload", "avatars");
+            var dirPath = Path.Combine(hostEnvironment.ContentRootPath, uploadPath);
+            Directory.CreateDirectory(dirPath);
+            var fullPath = Path.Combine(dirPath, request.FileName);
+
+            using (var fileStream = System.IO.File.Create(fullPath))
+            {
+                await fileStream.WriteAsync(request.FileContent);
+            }
+
+            var fileModel = await repository.SaveFile(request.FileName, uploadPath);
+
+            return Ok(fileModel);
+        }
     }
 }

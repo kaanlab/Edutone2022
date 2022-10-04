@@ -1,5 +1,104 @@
-﻿<h3>UserUpdate</h3>
+﻿@inject HttpClient httpClient
+
+<MudDialog>
+    <DialogContent>
+        <EditForm EditContext="@editContext">
+            <DataAnnotationsValidator />
+
+            <MudText Align="Align.Left">Логотип</MudText>
+            <MudGrid Class="justify-end mb-5">
+                <MudItem>
+                    @if (imgUrl is not null)
+                    {
+                        <img class="img-fluid" src="@imgUrl">
+                    }
+                    else
+                    {
+                        if (Context.Avatar is not null)
+                        {
+                            <img class="img-fluid" src="@Context.Avatar.FullPath">
+                        }
+                    }
+                </MudItem>
+                <MudItem>
+                    <InputFile id="fileInput" OnChange="UploadFile" hidden accept=".jpg, .jpeg, .png" />
+                    <MudFab HtmlTag="label"
+                            Color="Color.Secondary"
+                            Icon="@Icons.Filled.Image"
+                            Label="Загрузить изображение"
+                            for="fileInput" />
+                </MudItem>
+            </MudGrid>
+
+            <MudTextField Label="Ф.И.О." Class="mb-3"
+                          @bind-Value="Context.DisplayName" For="@(() => Context.DisplayName)" />
+            <MudTextField Label="Логин" Class="mb-3"
+                          @bind-Value="Context.UserName" For="@(() => Context.UserName)" />
+            <MudTextField Label="Почта" Class="mb-3"
+                          @bind-Value="Context.Email" For="@(() => Context.Email)" />
+
+
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Info" OnClick="Update" Disabled="@formInvalid">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
 
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public AppUserUpdateRequest Context { get; set; } = new();
+
+    IBrowserFile file;
+    string imgUrl;
+    private bool formInvalid = true;
+    private EditContext editContext;
+    UploadFileRequest uploadFile;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(Context);
+        editContext.OnFieldChanged += HandleFieldChanged;
+    }
+
+    private void HandleFieldChanged(object sender, FieldChangedEventArgs e)
+    {
+        formInvalid = !editContext.Validate();
+        StateHasChanged();
+    }
+
+    private async Task UploadFile(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+        var buffers = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffers);
+        string imageType = file.ContentType;
+        imgUrl = $"data:{imageType};base64,{Convert.ToBase64String(buffers)}";
+        uploadFile = new UploadFileRequest
+            {
+                FileContent = buffers,
+                FileName = file.Name
+            };
+    }
+
+    async Task Update()
+    {
+        if (uploadFile is not null)
+        {
+            var response = await httpClient.PostAsJsonAsync<UploadFileRequest>("/api/upload/avatar", uploadFile);
+            if (response.IsSuccessStatusCode)
+            {
+                var fileModel = await response.Content.ReadFromJsonAsync<FileModel>();                
+                Context.Avatar = fileModel;
+            }
+        }
+        MudDialog.Close(DialogResult.Ok(Context));
+    }
+
+    void Cancel() => MudDialog.Cancel();
 }
